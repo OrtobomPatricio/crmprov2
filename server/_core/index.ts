@@ -147,11 +147,22 @@ async function startServer() {
     if (process.env.NODE_ENV !== "production") return next();
 
     const origin = req.headers.origin;
-    if (!origin || !allowedSet.has(origin)) {
-      console.warn(`[Security] CTSRF Blocked: ${origin}`);
+    if (!origin) {
+      console.warn(`[Security] CTSRF Blocked: No origin`);
       return res.status(403).json({ error: "CSRF blocked" });
     }
-    next();
+
+    // Check strict allow list
+    if (allowedSet.has(origin)) return next();
+
+    // Allow dynamic nip.io domains for VPS testing
+    if (origin.includes(".nip.io")) return next();
+
+    // Allow localhost/127.0.0.1 for local connectivity (e.g. via tunnel)
+    if (origin.includes("localhost") || origin.includes("127.0.0.1")) return next();
+
+    console.warn(`[Security] CTSRF Blocked: ${origin}`);
+    return res.status(403).json({ error: "CSRF blocked" });
   });
 
   // Request ID
