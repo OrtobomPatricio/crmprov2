@@ -97,8 +97,11 @@ async function startServer() {
   // CORS Config
   app.use(cors({
     origin: (origin, callback) => {
-      if (process.env.NODE_ENV !== "production") return callback(null, true);
+      // Allow requests with no origin (like mobile apps or curl requests)
       if (!origin) return callback(null, true);
+
+      // Dev mode allows everything
+      if (process.env.NODE_ENV !== "production") return callback(null, true);
 
       const normalize = (url: string) => url ? url.replace(/\/$/, "") : "";
       const allowedOrigins = [
@@ -107,12 +110,23 @@ async function startServer() {
         process.env.VITE_OAUTH_PORTAL_URL,
       ].filter(Boolean).map(url => normalize(url!));
 
+      // Check strictly allowed origins
       if (allowedOrigins.includes(normalize(origin))) {
-        callback(null, true);
-      } else {
-        console.warn(`[CORS] Blocked: ${origin}`);
-        callback(new Error("Not allowed by CORS"));
+        return callback(null, true);
       }
+
+      // Allow dynamic nip.io domains for VPS testing
+      if (origin.includes(".nip.io")) {
+        return callback(null, true);
+      }
+
+      // Allow localhost/127.0.0.1 for local connectivity
+      if (origin.includes("localhost") || origin.includes("127.0.0.1")) {
+        return callback(null, true);
+      }
+
+      console.warn(`[CORS] Blocked: ${origin}`);
+      callback(new Error("Not allowed by CORS"));
     },
     credentials: true,
   }));
