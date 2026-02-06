@@ -665,3 +665,47 @@ export const smtpConnections = mysqlTable("smtp_connections", {
 
 export type SmtpConnection = typeof smtpConnections.$inferSelect;
 export type InsertSmtpConnection = typeof smtpConnections.$inferInsert;
+
+/**
+ * Support Queues
+ */
+export const supportQueues = mysqlTable("support_queues", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 100 }).notNull(),
+  color: varchar("color", { length: 32 }).default("#3b82f6"),
+  greetingMessage: text("greetingMessage"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type SupportQueue = typeof supportQueues.$inferSelect;
+export type InsertSupportQueue = typeof supportQueues.$inferInsert;
+
+/**
+ * Support Queue Members
+ */
+export const supportUserQueues = mysqlTable("support_user_queues", {
+  id: int("id").autoincrement().primaryKey(),
+  queueId: int("queueId").notNull().references(() => supportQueues.id, { onDelete: "cascade" }),
+  userId: int("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (t) => ({
+  uniqUserQueue: uniqueIndex("uniq_user_queue").on(t.queueId, t.userId),
+}));
+
+export type SupportUserQueue = typeof supportUserQueues.$inferSelect;
+export type InsertSupportUserQueue = typeof supportUserQueues.$inferInsert;
+
+/**
+ * Quick Answers
+ */
+export const quickAnswers = mysqlTable("quick_answers", {
+  id: int("id").autoincrement().primaryKey(),
+  shortcut: text("shortcut").notNull(),
+  message: text("message").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type QuickAnswer = typeof quickAnswers.$inferSelect;
+export type InsertQuickAnswer = typeof quickAnswers.$inferInsert;
